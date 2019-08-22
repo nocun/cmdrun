@@ -106,7 +106,7 @@ auto create_arguments(std::istream& cmd_stream, std::index_sequence<I...>)
     return args;
 }
 
-template <typename Ret, typename ...Args, typename Indices = std::index_sequence_for<Args...>>
+template <typename Ret, typename... Args, typename Indices = std::index_sequence_for<Args...>>
 command_callback create_function_call(std::function<Ret(Args...)> f)
 {
     return

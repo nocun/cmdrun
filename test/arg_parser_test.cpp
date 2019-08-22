@@ -58,7 +58,7 @@ TEST_CASE("can parse strings")
     
     SECTION("can parse a single word in quotes")
     {
-        std::istringstream iss("\"word\"");
+        std::istringstream iss(R"("word")");
         CHECK(parse<std::string>(iss) == "word");
     }
     
@@ -73,28 +73,28 @@ TEST_CASE("can parse strings")
         
         SECTION("one by one in quotes")
         {
-            std::istringstream iss("\"multiple\" \"words\"");
+            std::istringstream iss(R"("multiple" "words")");
             CHECK(parse<std::string>(iss) == "multiple");
             CHECK(parse<std::string>(iss) == "words");
         }
         
         SECTION("as a single string")
         {
-            std::istringstream iss("\"multiple words\"");
+            std::istringstream iss(R"("multiple words")");
             CHECK(parse<std::string>(iss) == "multiple words");
         }
     }
     
-    SECTION("can ignore an espaced quotation symbol")
+    SECTION("escaped quotation symbol does not end parsing")
     {
-        std::istringstream iss("\"need to \\\"quote\\\" something\"");
-        CHECK(parse<std::string>(iss) == "need to \"quote\" something");
+        std::istringstream iss(R"("need to \"quote\" something")");
+        CHECK(parse<std::string>(iss) == R"(need to "quote" something)");
     }
     
     SECTION("escaping only work on the quotation symbol")
     {
-        std::istringstream iss("\"this is a \\\"random\\\" string c:\\abc \\\\ def\"");
-        CHECK(parse<std::string>(iss) == "this is a \"random\" string c:\\abc \\\\ def");
+        std::istringstream iss(R"("this is a \"random\" string c:\abc \\ def")");
+        CHECK(parse<std::string>(iss) == R"(this is a "random" string c:\abc \\ def)");
     }
 }
 
