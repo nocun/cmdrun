@@ -85,6 +85,41 @@ inline std::istream& operator>>(std::istream& is, std::string& value)
 }
 
 template <typename T>
+std::istream& operator>>(std::istream& is, std::vector<T>& container)
+{
+    is >> std::ws;
+    
+    if (is.get() != '{')  {
+        throw parsing_error("Invalid vector (must start with a '{')");
+    }
+    
+    is >> std::ws;
+    
+    while (is.good() && is.peek() != '}') {
+        T element;
+        
+        if (is >> element) {
+            container.push_back(element);
+        } else {
+            throw parsing_error("Unable to parse vector element");
+        }
+        
+        is >> std::ws;
+        char next = is.peek();
+        
+        if (next == ',') {
+            is.get();
+        }
+    }
+    
+    if (is.get() != '}')  {
+        throw parsing_error("Invalid vector (must end with a '}')");
+    }
+    
+    return is;
+}
+
+template <typename T>
 T parse(std::istream& is)
 {
     T value;

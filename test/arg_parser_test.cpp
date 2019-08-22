@@ -98,3 +98,77 @@ TEST_CASE("can parse strings")
     }
 }
 
+
+TEST_CASE("can parse vector<int>")
+{
+    using type = std::vector<int>;
+    
+    SECTION("can parse empty vectors")
+    {
+        std::istringstream iss("{}");
+        CHECK(parse<type>(iss) == type{});
+        
+        iss = std::istringstream("  { }");
+        CHECK(parse<type>(iss) == type{});
+        
+        iss = std::istringstream(" { } 3.14");
+        CHECK(parse<type>(iss) == std::vector<int>{});
+        CHECK(parse<double>(iss) == Approx(3.14));
+    }
+    
+    SECTION("bad vector format result in an exception")
+    {
+        std::istringstream iss("5");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("{");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream(" { 1, 2, 3 ");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream(" { 1, 2, 3, ");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("}{");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+    }
+    
+    SECTION("can parse vectors with many elements")
+    {
+        std::istringstream iss("{3}");
+        CHECK(parse<type>(iss) == type{3});
+        
+        iss = std::istringstream("{1,2}");
+        CHECK(parse<type>(iss) == type{1, 2});
+        
+        iss = std::istringstream("{ -3, 5, 123 , 7     , 999 }");
+        CHECK(parse<type>(iss) == type{-3, 5, 123, 7, 999});
+    }
+    
+    SECTION("can parse multiple vectors from a single stream")
+    {
+        std::istringstream iss("  { }");
+        CHECK(parse<type>(iss) == type{});
+        CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("{}  {  }");
+        CHECK(parse<type>(iss) == type{});
+        CHECK(parse<type>(iss) == type{});
+        CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("{5, 6 ,8 , 9} {}");
+        CHECK(parse<type>(iss) == type{5, 6, 8, 9});
+        CHECK(parse<type>(iss) == type{});
+        CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+        
+        iss = std::istringstream("{ 234234 , 165123, 75552, -3425289, 55555} {-123123, 983223, 0 , 123591}    { 700 }");
+        CHECK(parse<type>(iss) == type{234234, 165123, 75552, -3425289, 55555});
+        CHECK(parse<type>(iss) == type{-123123, 983223, 0, 123591});
+        CHECK(parse<type>(iss) == type{700});
+        CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+    }
+}
