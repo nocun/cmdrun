@@ -127,6 +127,9 @@ TEST_CASE("can parse vector<int>")
         iss = std::istringstream("{");
         REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
         
+        iss = std::istringstream("{ , 3 }");
+        REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
+        
         iss = std::istringstream(" { 1, 2, 3 ");
         REQUIRE_THROWS_AS(parse<type>(iss), parsing_error);
         
@@ -170,5 +173,40 @@ TEST_CASE("can parse vector<int>")
         CHECK(parse<type>(iss) == type{-123123, 983223, 0, 123591});
         CHECK(parse<type>(iss) == type{700});
         CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+    }
+}
+
+TEST_CASE("can parse vector<string>")
+{
+    using type = std::vector<std::string>;
+
+    SECTION("can parse empty vectors")
+    {
+        std::istringstream iss("{}");
+        CHECK(parse<type>(iss) == type{});
+        
+        iss = std::istringstream("  { }");
+        CHECK(parse<type>(iss) == type{});
+    }
+    
+    SECTION("can parse vectors with unquoted strings")
+    {
+        std::istringstream iss("{ hello, world}");
+        CHECK(parse<type>(iss) == type{"hello", "world"});
+        
+        iss = std::istringstream("  { a , b    ,  cdef  , 4 }");
+        CHECK(parse<type>(iss) == type{"a", "b", "cdef", "4"});
+    }
+    
+    SECTION("can parse vectors with quoted strings")
+    {
+        std::istringstream iss(R"({"abc"})");
+        CHECK(parse<type>(iss) == type{"abc"});
+        
+        iss = std::istringstream(R"({ "" , one, "two three", " 4 "})");
+        CHECK(parse<type>(iss) == type{"", "one", "two three", " 4 "});
+        
+        iss = std::istringstream(R"({including , "vector-specific ,", "} characters", "in the string"})");
+        CHECK(parse<type>(iss) == type{"including", "vector-specific ,", "} characters", "in the string"});
     }
 }

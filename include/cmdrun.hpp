@@ -71,6 +71,39 @@ inline std::string parse_multiword_string(std::istream& is)
     return str;
 }
 
+template <typename T>
+T parse_sequence_element(std::istream& is)
+{
+    T element;
+    
+    if (is >> element) {
+        return element;
+    } else {
+        throw parsing_error("Unable to parse vector element");
+    }
+}
+
+template <>
+inline std::string parse_sequence_element<std::string>(std::istream& is)
+{
+    std::string element;
+    is >> std::ws;
+    
+    if (!is.good() || is.peek() == ',') {
+        throw parsing_error("Missing element");
+    } else if (is.peek() == '"') {
+        element = parse_multiword_string(is);
+    } else {
+        char next = is.peek();
+        while (is.good() && !std::isspace(next) && next != ',' && next != '}' ) {
+            element += is.get();
+            next = is.peek();
+        }
+    }
+    
+    return element;
+}
+
 inline std::istream& operator>>(std::istream& is, std::string& value)
 {
     is >> std::ws;
@@ -96,18 +129,11 @@ std::istream& operator>>(std::istream& is, std::vector<T>& container)
     is >> std::ws;
     
     while (is.good() && is.peek() != '}') {
-        T element;
-        
-        if (is >> element) {
-            container.push_back(element);
-        } else {
-            throw parsing_error("Unable to parse vector element");
-        }
+        container.push_back(parse_sequence_element<T>(is));
         
         is >> std::ws;
-        char next = is.peek();
         
-        if (next == ',') {
+        if (is.peek() == ',') {
             is.get();
         }
     }
