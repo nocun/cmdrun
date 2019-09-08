@@ -147,20 +147,6 @@ std::istream& operator>>(std::istream& is, std::vector<T>& container)
     return is;
 }
 
-template <typename T, size_t I, typename TupleType>
-void parse_tuple_element(std::istream& is, TupleType& tuple)
-{
-    std::get<I>(tuple) = parse_sequence_element<T>(is);
-}
-
-template <typename... Args, std::size_t... I>
-auto parse_tuple(std::istream& is, std::index_sequence<I...>)
-{
-    auto tuple = std::tuple<Args...>();
-    (parse_tuple_element<Args, I>(is, tuple), ...);
-    return tuple;
-}
-
 template <typename... Args>
 std::istream& operator>>(std::istream& is, std::tuple<Args...>& tuple)
 {
@@ -172,7 +158,7 @@ std::istream& operator>>(std::istream& is, std::tuple<Args...>& tuple)
     
     is >> std::ws;
     
-    tuple = parse_tuple<Args...>(is, std::index_sequence_for<Args...>{});
+    tuple = std::tuple<Args...>{ parse_sequence_element<Args>(is)... };
     
     if (is.get() != '}')  {
         throw parsing_error("Invalid tuple (must end with a '}')");
@@ -189,26 +175,12 @@ T parse(std::istream& is)
     return value;
 }
 
-template <typename T, size_t I, typename ArgTuple>
-void get_argument(std::istream& cmd_stream, ArgTuple& args)
-{
-    std::get<I>(args) = parse<T>(cmd_stream);
-}
-
-template <typename... Args, std::size_t... I>
-auto create_arguments(std::istream& cmd_stream, std::index_sequence<I...>)
-{
-    auto args = std::tuple<Args...>();
-    (get_argument<Args, I>(cmd_stream, args), ...);
-    return args;
-}
-
 template <typename Ret, typename... Args, typename Indices = std::index_sequence_for<Args...>>
 command_callback create_function_call(std::function<Ret(Args...)> f)
 {
     return
         [f](std::istream& params) {
-            std::tuple<Args...> args = create_arguments<Args...>(params, Indices{});
+            auto args = std::tuple<Args...>{ parse<Args>(params)... };
             (void)std::apply(f, args);
         };
 }
