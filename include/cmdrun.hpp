@@ -67,16 +67,27 @@ inline std::string parse_multiword_string(std::istream& is)
     return str;
 }
 
+inline void parse_sequence_delimiter(std::istream& is)
+{
+    is >> std::ws;
+    
+    if (is.peek() == ',') {
+        is.get();
+    }
+}
+
 template <typename T>
 T parse_sequence_element(std::istream& is)
 {
     T element;
+    is >> element;
     
-    if (is >> element) {
-        return element;
-    } else {
+    if (!is.good()) {
         throw parsing_error("Unable to parse sequence element");
     }
+
+    parse_sequence_delimiter(is);
+    return element;
 }
 
 template <>
@@ -97,6 +108,7 @@ inline std::string parse_sequence_element<std::string>(std::istream& is)
         }
     }
     
+    parse_sequence_delimiter(is);
     return element;
 }
 
@@ -126,16 +138,44 @@ std::istream& operator>>(std::istream& is, std::vector<T>& container)
     
     while (is.good() && is.peek() != '}') {
         container.push_back(parse_sequence_element<T>(is));
-        
-        is >> std::ws;
-        
-        if (is.peek() == ',') {
-            is.get();
-        }
     }
     
     if (is.get() != '}')  {
         throw parsing_error("Invalid vector (must end with a '}')");
+    }
+    
+    return is;
+}
+
+template <typename T, size_t I, typename TupleType>
+void parse_tuple_element(std::istream& is, TupleType& tuple)
+{
+    std::get<I>(tuple) = parse_sequence_element<T>(is);
+}
+
+template <typename... Args, std::size_t... I>
+auto parse_tuple(std::istream& is, std::index_sequence<I...>)
+{
+    auto tuple = std::tuple<Args...>();
+    (parse_tuple_element<Args, I>(is, tuple), ...);
+    return tuple;
+}
+
+template <typename... Args>
+std::istream& operator>>(std::istream& is, std::tuple<Args...>& tuple)
+{
+    is >> std::ws;
+    
+    if (is.get() != '{')  {
+        throw parsing_error("Invalid tuple (must start with a '{')");
+    }
+    
+    is >> std::ws;
+    
+    tuple = parse_tuple<Args...>(is, std::index_sequence_for<Args...>{});
+    
+    if (is.get() != '}')  {
+        throw parsing_error("Invalid tuple (must end with a '}')");
     }
     
     return is;
@@ -152,7 +192,7 @@ T parse(std::istream& is)
 template <typename T, size_t I, typename ArgTuple>
 void get_argument(std::istream& cmd_stream, ArgTuple& args)
 {
-    std::get<I>(args) = parse<typename std::decay<T>::type>(cmd_stream);
+    std::get<I>(args) = parse<T>(cmd_stream);
 }
 
 template <typename... Args, std::size_t... I>

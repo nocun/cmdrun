@@ -216,3 +216,35 @@ TEST_CASE("can parse vector<string>")
         CHECK(parse<type>(iss) == type{"including", "vector-specific ,", "} characters", "in the string"});
     }
 }
+
+TEST_CASE("can parse tuples")
+{
+    {
+        std::istringstream iss("{3}");
+        using type = std::tuple<int>;
+        CHECK(parse<type>(iss) == type{3});
+    }
+    
+    {
+        std::istringstream iss("{500, 6123}");
+        using type = std::tuple<int, int>;
+        CHECK(parse<type>(iss) == type{500, 6123});
+    }
+    
+    {
+        std::istringstream iss("{0, 1, abc}");
+        using type = std::tuple<int, int, std::string>;
+        CHECK(parse<type>(iss) == type{0, 1, "abc"});
+    }
+    
+    {
+        std::istringstream iss(R"({"one, two", 1, 6.28, X}")");
+        using type = std::tuple<std::string, int, double, char>;
+        auto tuple = parse<type>(iss);
+        
+        CHECK(std::get<0>(tuple) == "one, two");
+        CHECK(std::get<1>(tuple) == 1);
+        CHECK(std::get<2>(tuple) == Approx(6.28));
+        CHECK(std::get<3>(tuple) == 'X');
+    }
+}
