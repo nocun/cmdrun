@@ -42,30 +42,26 @@ struct parsing_error : std::runtime_error
 inline std::string parse_multiword_string(std::istream& is)
 {
     is.unsetf(std::ios_base::skipws);
-    assert(is.peek() == '"');
-    is.get();
     
-    std::string str;
-    char c = '\0';
-    bool escape_symbol = false;
-    
-    while (std::operator>>(is, c)) {
-        if (c == '"' && !escape_symbol) {
-            break;
-        }
-        else if (c != '"' && escape_symbol) {
-            str += '\\';
-        }
-        
-        escape_symbol = c == '\\';
-        
-        if (!escape_symbol) {
-            str += c;
-        }
+    if (is.get() != '"')  {
+        throw parsing_error("Invalid multi-word string (must start with a quotation mark)");
     }
     
-    // if c is not '"' - we are missing the closing quote
-    // throw exception
+    std::string str;
+    
+    while (is.good() && is.peek() != '"') {
+        char c = is.get();
+        
+        if (c == '\\' && is.peek() == '"') {
+            c = is.get();
+        }
+        
+        str += c;
+    }
+    
+    if (is.get() != '"')  {
+        throw parsing_error("Invalid multi-word string (must end with a quotation mark)");
+    }
     
     is.setf(std::ios_base::skipws);
     return str;
@@ -79,7 +75,7 @@ T parse_sequence_element(std::istream& is)
     if (is >> element) {
         return element;
     } else {
-        throw parsing_error("Unable to parse vector element");
+        throw parsing_error("Unable to parse sequence element");
     }
 }
 
@@ -113,7 +109,7 @@ inline std::istream& operator>>(std::istream& is, std::string& value)
         return is;
     }
     
-    // read a single word string
+    // parse a single word
     return std::operator>>(is, value);
 }
 

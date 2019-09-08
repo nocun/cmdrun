@@ -96,6 +96,12 @@ TEST_CASE("can parse strings")
         std::istringstream iss(R"("this is a \"random\" string c:\abc \\ def")");
         CHECK(parse<std::string>(iss) == R"(this is a "random" string c:\abc \\ def)");
     }
+    
+    SECTION("multi-word string must end with a quotation mark")
+    {
+        std::istringstream iss(R"("hello world)");
+        REQUIRE_THROWS_AS(parse<std::string>(iss), parsing_error);
+    }
 }
 
 
