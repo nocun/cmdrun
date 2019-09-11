@@ -248,3 +248,126 @@ TEST_CASE("can parse tuples")
         CHECK(std::get<3>(tuple) == 'X');
     }
 }
+
+TEST_CASE("can parse pairs")
+{
+    {
+        std::istringstream iss("{1, 2}");
+        using type = std::pair<int, int>;
+        CHECK(parse<type>(iss) == type{1, 2});
+    }
+}
+
+TEST_CASE("can parse sequence containers")
+{
+    SECTION("arrays")
+    {
+        {
+            using type = std::array<int, 1>;
+            std::istringstream iss("{5}");
+            CHECK(parse<type>(iss) == type{5});
+        }
+        
+        {
+            using type = std::array<int, 5>;
+            std::istringstream iss("{6, 1, 3, 2, -7}");
+            CHECK(parse<type>(iss) == type{6, 1, 3, 2, -7});
+        }
+        
+        {
+            using type = std::array<int, 2>;
+            std::istringstream iss("{7}");
+            CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+            
+            iss = std::istringstream("{1, 6, 7}");
+            CHECK_THROWS_AS(parse<type>(iss), parsing_error);
+        }
+
+    }
+    
+    SECTION("deques")
+    {
+        using type = std::deque<int>;
+        
+        std::istringstream iss("{5, 6, 100, 828495}");
+        CHECK(parse<type>(iss) == type{5, 6, 100, 828495});
+    }
+    
+    SECTION("forward_lists")
+    {
+        using type = std::forward_list<int>;
+        
+        std::istringstream iss("{5, 6, 100, 828495}");
+        CHECK(parse<type>(iss) == type{5, 6, 100, 828495});
+    }
+    
+    SECTION("lists")
+    {
+        using type = std::list<int>;
+        
+        std::istringstream iss("{5, 6, 100, 828495}");
+        CHECK(parse<type>(iss) == type{5, 6, 100, 828495});
+    }
+    
+}
+
+TEST_CASE("can parse associative containers")
+{
+    SECTION("sets")
+    {
+        using type = std::set<int>;
+        std::istringstream iss("{2}");
+        CHECK(parse<type>(iss) == type{2});
+        
+        iss = std::istringstream("{-5, 0, 5, 23, -5, 3}");
+        CHECK(parse<type>(iss) == type{-5, 0, 5, 23, 3});
+    }
+    
+    SECTION("maps")
+    {
+        using type = std::map<int, int>;
+        
+        std::istringstream iss("{}");
+        CHECK(parse<type>(iss).size() == 0);
+        
+        iss = std::istringstream("{{5, 6}}");
+        CHECK(parse<type>(iss) == type{{5, 6}});
+        
+        iss = std::istringstream("{{0, 1}, {2, 3}, {4, 5}}");
+        CHECK(parse<type>(iss) == type{{0, 1}, {2, 3}, {4, 5}});
+    }
+    
+    SECTION("multisets")
+    {
+        using type = std::multiset<int>;
+        
+        std::istringstream iss("{2}");
+        auto multiset = parse<type>(iss);
+        CHECK(multiset.size() == 1);
+        CHECK(multiset.count(2) == 1);
+        
+        iss = std::istringstream("{1, 2, 2, 2, 3, 3}");
+        multiset = parse<type>(iss);
+        CHECK(multiset.size() == 6);
+        CHECK(multiset.count(1) == 1);
+        CHECK(multiset.count(2) == 3);
+        CHECK(multiset.count(3) == 2);
+    }
+    
+    SECTION("multimaps")
+    {
+        using type = std::multimap<int, int>;
+        
+        std::istringstream iss("{{1, 2}}");
+        auto multimap = parse<type>(iss);
+        CHECK(multimap.size() == 1);
+        CHECK(multimap.count(1) == 1);
+        
+        iss = std::istringstream("{{1, 4}, {2, 5}, {2, 6}, {2, 7}, {3, 8}, {3, 9}}");
+        multimap = parse<type>(iss);
+        CHECK(multimap.size() == 6);
+        CHECK(multimap.count(1) == 1);
+        CHECK(multimap.count(2) == 3);
+        CHECK(multimap.count(3) == 2);
+    }
+}

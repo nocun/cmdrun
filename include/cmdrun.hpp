@@ -3,7 +3,12 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <array>
 #include <vector>
+#include <forward_list>
+#include <list>
+#include <deque>
+#include <set>
 #include <map>
 #include <functional>
 #include <cassert>
@@ -164,6 +169,92 @@ std::istream& operator>>(std::istream& is, std::tuple<Args...>& tuple)
         throw parsing_error("Invalid tuple (must end with a '}')");
     }
     
+    return is;
+}
+
+template <typename K, typename V>
+std::istream& operator>>(std::istream& is, std::pair<K, V>& p)
+{
+    std::tuple<K, V> t;
+    is >> t;
+    p = std::make_pair(std::get<0>(t), std::get<1>(t));
+    return is;
+}
+
+template <typename T, size_t N>
+std::istream& operator>>(std::istream& is, std::array<T, N>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    
+    if (v.size() != N) {
+        throw parsing_error("Invalid static array initialization (number of elements do not match)");
+    }
+    
+    std::copy(begin(v), end(v), begin(container));
+    return is;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, std::deque<T>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    container = std::deque<T>(begin(v), end(v));
+    return is;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, std::forward_list<T>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    container = std::forward_list<T>(begin(v), end(v));
+    return is;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, std::list<T>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    container = std::list<T>(begin(v), end(v));
+    return is;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, std::set<T>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    container = std::set<T>(begin(v), end(v));
+    return is;
+}
+
+template <typename K, typename V>
+std::istream& operator>>(std::istream& is, std::map<K, V>& container)
+{
+    std::vector<std::pair<K, V>> v;
+    is >> v;
+    container = std::map<K, V>(begin(v), end(v));
+    return is;
+}
+
+template <typename T>
+std::istream& operator>>(std::istream& is, std::multiset<T>& container)
+{
+    std::vector<T> v;
+    is >> v;
+    container = std::multiset<T>(begin(v), end(v));
+    return is;
+}
+
+template <typename K, typename V>
+std::istream& operator>>(std::istream& is, std::multimap<K, V>& container)
+{
+    std::vector<std::pair<K, V>> v;
+    is >> v;
+    container = std::multimap<K, V>(begin(v), end(v));
     return is;
 }
 
