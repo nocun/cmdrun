@@ -46,8 +46,6 @@ struct parsing_error : std::runtime_error
 
 inline std::string parse_multiword_string(std::istream& is)
 {
-    is.unsetf(std::ios_base::skipws);
-    
     if (is.get() != '"')  {
         throw parsing_error("Invalid multi-word string (must start with a quotation mark)");
     }
@@ -68,7 +66,6 @@ inline std::string parse_multiword_string(std::istream& is)
         throw parsing_error("Invalid multi-word string (must end with a quotation mark)");
     }
     
-    is.setf(std::ios_base::skipws);
     return str;
 }
 
@@ -195,67 +192,61 @@ std::istream& operator>>(std::istream& is, std::array<T, N>& container)
     return is;
 }
 
+template <typename ValueType, typename Container>
+std::istream& parse_container(std::istream& is, Container& container)
+{
+    std::vector<ValueType> vec;
+    is >> vec;
+    container = Container(begin(vec), end(vec));
+    return is;
+}
+
+template <typename Container>
+std::istream& parse_container(std::istream& is, Container& container)
+{
+    return parse_container<typename Container::value_type>(is, container);
+}
+
 template <typename T>
 std::istream& operator>>(std::istream& is, std::deque<T>& container)
 {
-    std::vector<T> v;
-    is >> v;
-    container = std::deque<T>(begin(v), end(v));
-    return is;
+    return parse_container(is, container);
 }
 
 template <typename T>
 std::istream& operator>>(std::istream& is, std::forward_list<T>& container)
 {
-    std::vector<T> v;
-    is >> v;
-    container = std::forward_list<T>(begin(v), end(v));
-    return is;
+    return parse_container(is, container);
 }
 
 template <typename T>
 std::istream& operator>>(std::istream& is, std::list<T>& container)
 {
-    std::vector<T> v;
-    is >> v;
-    container = std::list<T>(begin(v), end(v));
-    return is;
+    return parse_container(is, container);
 }
 
 template <typename T>
 std::istream& operator>>(std::istream& is, std::set<T>& container)
 {
-    std::vector<T> v;
-    is >> v;
-    container = std::set<T>(begin(v), end(v));
-    return is;
+    return parse_container(is, container);
 }
 
 template <typename K, typename V>
 std::istream& operator>>(std::istream& is, std::map<K, V>& container)
 {
-    std::vector<std::pair<K, V>> v;
-    is >> v;
-    container = std::map<K, V>(begin(v), end(v));
-    return is;
+    return parse_container<std::pair<K, V>>(is, container);
 }
 
 template <typename T>
 std::istream& operator>>(std::istream& is, std::multiset<T>& container)
 {
-    std::vector<T> v;
-    is >> v;
-    container = std::multiset<T>(begin(v), end(v));
-    return is;
+    return parse_container(is, container);
 }
 
 template <typename K, typename V>
 std::istream& operator>>(std::istream& is, std::multimap<K, V>& container)
 {
-    std::vector<std::pair<K, V>> v;
-    is >> v;
-    container = std::multimap<K, V>(begin(v), end(v));
-    return is;
+    return parse_container<std::pair<K, V>>(is, container);
 }
 
 template <typename T>
