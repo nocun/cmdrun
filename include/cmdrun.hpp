@@ -18,19 +18,6 @@
 
 namespace cmdrun {
 
-using param_list = std::vector<std::string>;
-
-struct command_param_values
-{
-    std::string command;
-    param_list params;
-};
-
-struct command_param_map {
-    std::string command;
-    std::map<std::string, std::string> params;
-};
-
 using command_callback = std::function<void(std::istream&)>;
 
 namespace detail {
@@ -268,6 +255,14 @@ command_callback create_function_call(std::function<Ret(Args...)> f)
 }
 }
 
+using param_list = std::vector<std::string>;
+
+struct command_param_values
+{
+    std::string command;
+    param_list params;
+};
+
 struct command
 {
 public:
@@ -309,52 +304,6 @@ inline command_param_values parse_args(int argc, const char* argv[])
 }
 
 }
-
-class command_parser
-{
-    std::vector<command> commands;
-    
-public:
-    command_parser(const command& command_):
-        commands{command_} {}
-    
-    command_parser(const std::vector<command>& commands_ = {}):
-        commands{commands_} {}
-    
-    std::optional<command_param_map> parse(const std::string& command, const param_list& params = {}) const
-    {
-        const auto it = std::find_if(begin(commands), end(commands),
-            [&command](const auto& cmd) {
-                return cmd.name == command;
-            });
-        
-        if (it == end(commands)) {
-            return std::nullopt;
-        }
-        
-        return command_param_map{command, get_argument_map(it->params, params)};
-    }
-    
-    std::optional<command_param_map> parse(int argc, const char* argv[])
-    {
-        auto args = cmdrun::detail::parse_args(argc, argv);
-        return parse(args.command, args.params);
-    }
-    
-private:
-    std::map<std::string, std::string> get_argument_map(const param_list& arg_names, const param_list& params) const
-    {
-        std::map<std::string, std::string> argMap;
-        
-        for (size_t i=0; i<arg_names.size(); i++) {
-            const auto& name = arg_names[i];
-            const auto& value = i < params.size() ? params[i] : std::string();
-            argMap[name] = value;
-        }
-        
-        return argMap;
-    }
-};
 
 
 class command_runner {
@@ -403,8 +352,6 @@ public:
     }
     
 };
-
-
 
 }
 
