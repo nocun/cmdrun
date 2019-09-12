@@ -1,6 +1,8 @@
 #include <catch2/catch.hpp>
 #include "cmdrun.hpp"
 
+#define ARGV_SIZE(argv) (sizeof(argv)/sizeof(*argv))
+
 using namespace cmdrun;
 
 TEST_CASE("can run with no arguments")
@@ -95,3 +97,26 @@ TEST_CASE("can parse multi-word string arguments with whitespace characters")
     }
 }
 
+TEST_CASE("can run commands specified as command line parameters")
+{
+    const char program[] = "test";
+    const char* argv[] = { program, "cmd", "123" };
+    
+    int arg = 0;
+    auto cp = command_runner(command{"cmd", [&](int a){ arg = a; }});
+    cp.run(ARGV_SIZE(argv), argv);
+    
+    CHECK(arg == 123);
+}
+
+TEST_CASE("command line parameters may contain whitespace characters")
+{
+    const char program[] = "test";
+    const char* argv[] = { program, "cmd", "a b\tc" };
+    
+    std::string arg;
+    auto cp = command_runner(command{"cmd", [&](std::string str) { arg = str; }});
+    cp.run(ARGV_SIZE(argv), argv);
+    
+    CHECK(arg == "a b\tc");
+}

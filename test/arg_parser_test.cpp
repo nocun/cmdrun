@@ -1,45 +1,6 @@
 #include <catch2/catch.hpp>
 #include "cmdrun.hpp"
 
-#define ARGV_SIZE(argv) (sizeof(argv)/sizeof(*argv))
-
-using namespace cmdrun::detail;
-
-TEST_CASE("can parse empty command line")
-{
-    const char program[] = "test";
-    const char* argv[] = { program };
-    
-    auto args = parse_args(ARGV_SIZE(argv), argv);
-    
-    CHECK(args.command == "");
-    CHECK(args.params.empty());
-}
-
-TEST_CASE("can parse single command")
-{
-    const char program[] = "test";
-    const char* argv[] = { program, "my_command" };
-    
-    auto args = parse_args(ARGV_SIZE(argv), argv);
-    
-    CHECK(args.command == "my_command");
-    CHECK(args.params.empty());
-}
-
-TEST_CASE("can parse command with parameters")
-{
-    const char program[] = "test";
-    const char* argv[] = { program, "my_command", "param1", "param2" };
-    
-    auto args = parse_args(ARGV_SIZE(argv), argv);
-    
-    CHECK(args.command == "my_command");
-    CHECK(args.params.size() == 2);
-    CHECK(args.params[0] == "param1");
-    CHECK(args.params[1] == "param2");
-}
-
 using namespace cmdrun::detail;
 
 TEST_CASE("can parse strings")

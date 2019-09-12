@@ -12,6 +12,7 @@
 #include <map>
 #include <functional>
 #include <cassert>
+#include <cctype>
 #include <iostream>
 #include <stdexcept>
 
@@ -255,55 +256,20 @@ command_callback create_function_call(std::function<Ret(Args...)> f)
 }
 }
 
-using param_list = std::vector<std::string>;
-
-struct command_param_values
-{
-    std::string command;
-    param_list params;
-};
-
 struct command
 {
 public:
-    command(const std::string& name_, const param_list& params_ = {}):
-        name{name_}, params{params_} {}
-    
     template <typename Callback>
     command(const std::string& name_, Callback callback_):
-        command{name_}
+        name{name_}
     {
         std::function callback_fn = std::forward<Callback>(callback_);
         callback = cmdrun::detail::create_function_call(callback_fn);
     }
     
     std::string name;
-    param_list params;
     command_callback callback;
 };
-
-namespace detail
-{
-
-inline command_param_values parse_args(int argc, const char* argv[])
-{
-    command_param_values result;
-    
-    if (argc <= 1) {
-        return {};
-    }
-    
-    result.command = std::string(argv[1]);
-    result.params.resize(static_cast<size_t>(argc-2));
-    
-    for (size_t i=2; i<static_cast<size_t>(argc); i++) {
-        result.params[i-2] = std::string(argv[i]);
-    }
-    
-    return result;
-}
-
-}
 
 
 class command_runner {
@@ -316,22 +282,19 @@ public:
     command_runner(const std::vector<command>& commands_ = {}):
         commands{commands_} {}
     
-    void run(const std::string& command, std::istream& args) const
-    {
-        const auto it = std::find_if(begin(commands), end(commands),
-            [&command](const auto& cmd) {
-                return cmd.name == command;
-            });
-        
-        if (it->callback) {
-            it->callback(args);
-        }
-    }
-    
     void run(int argc, const char* argv[]) const
     {
-        auto args = cmdrun::detail::parse_args(argc, argv);
-        return run(args.command);
+        std::ostringstream cmd_stream;
+
+        for (int i=1; i<argc; i++) {
+            auto param = std::string(argv[i]);
+            if (std::find_if(begin(param), end(param), ::isspace) != end(param)) {
+                param = '"' + param + '"'; 
+            }
+            cmd_stream << param << ' ';
+        }
+        
+        return run(cmd_stream.str());
     }
     
     void run(const std::string& command_line) const
