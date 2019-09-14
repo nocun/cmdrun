@@ -245,7 +245,7 @@ T parse(std::istream& is)
     return value;
 }
 
-template <typename Ret, typename... Args, typename Indices = std::index_sequence_for<Args...>>
+template <typename Ret, typename... Args>
 command_callback create_function_call(std::function<Ret(Args...)> f)
 {
     return
@@ -254,7 +254,22 @@ command_callback create_function_call(std::function<Ret(Args...)> f)
             (void)std::apply(f, args);
         };
 }
+
+template <typename T, typename R, typename... Args>
+auto bind_object(R(T::*method_ptr)(Args...), T& object)
+{
+    return [&object, method_ptr](Args... args) {
+        (object.*method_ptr)(std::forward<Args>(args)...);
+    };
 }
+
+}
+
+// helper macros for creating command objects, added 'COMMAND' for consistency
+#define COMMAND(name, callable) cmdrun::command{name, callable}
+#define FUNCTION(function_name) COMMAND(#function_name, function_name)
+#define METHOD(object, method) cmdrun::command{#method, detail::bind_object(&decltype(object)::method, object)}
+
 
 struct command
 {
